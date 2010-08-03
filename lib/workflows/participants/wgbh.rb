@@ -17,20 +17,25 @@ $engine.register_participant 'preprocess_dam_metadata' do |workitem|
   true
 end
 
-$engine.register_participant 'preprocess_dam_asset' do |workitem|
+$engine.register_participant 'find_dam_asset' do |workitem|
   doc = Nokogiri::XML(workitem.fields['asset'])
   
   # .mp4  
-  workitem.fields['__bag_File'] = 'file://' + (Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.mp4')).first || '/dev/null')
+  path = File.expand_path((Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.mp4')).first))
   
   # .mp3  
-  workitem.fields['__bag_File'] = 'file://' + (Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.mp3')).first || '/dev/null') unless File.file?(workitem.fields['__bag_File'])
+  path = File.expand_path((Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.mp3')).first)) unless File.file? path
   
   # .xml  
-  workitem.fields['__bag_File'] = 'file://' + (Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.xml')).first || '/dev/null') unless File.file?(workitem.fields['__bag_File'])
+  path = File.expand_path((Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.xml')).first)) unless File.file? path
   
-  workitem.fields['__bag_File'] = 'file://' + (Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s).first || '/dev/null') unless File.file?(workitem.fields['__bag_File'])
+  path =  File.expand_path((Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s).first)) unless File.file? path
+    
+  'file://' + path
+end
+
+$engine.register_participant 'find_dam_asset_thumbnail' do |workitem|
+  doc = Nokogiri::XML(workitem.fields['asset'])
   
-  workitem.fields['__bag_Thumbnail'] = 'file://' + (Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.jpg')).first || '/dev/null')
-  true
+  'file://' + File.expand_path((Dir.glob(ASSET_BASE_PATH + '/**/' + doc.xpath('//UOIS/@NAME').first.to_s.gsub(/\.[a-z0-9]+$/, '.jpg')).first) || '/dev/null')
 end

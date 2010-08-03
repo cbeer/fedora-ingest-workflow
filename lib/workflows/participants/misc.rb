@@ -1,5 +1,6 @@
 
 require 'RMagick'
+require 'tempfile'
 
 # split an XML document into individual pieces
 $engine.register_participant 'split_xml' do |workitem|
@@ -21,29 +22,21 @@ $engine.register_participant 'upload_asset' do |workitem|
   true # process completely asynchronously...
 end
 
-
-
-$engine.register_participant 'handle_thumbnails' do |workitem|
-  return unless File.file? workitem.fields['__bag_Thumbnail'].gsub(/^file:\/\//,  '')
+$engine.register_participant 'create_thumbnail' do |workitem|
+  return unless File.file? workitem.fields[workitem.params['from_f']].gsub(/^file:\/\//,  '')
+  tmp = Tempfile.new workitem.fields['identifier'] + "_tn"
+  path = tmp.path()
+  tmp.close!
+  tmp = nil
   
-  img = Magick::Image.read(workitem.fields['__bag_Thumbnail']).first.sharpen(0,0.5)
-
-  c = img.crop_resized(320, 240, Magick::CenterGravity)
-  c.write('jpg:' + workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + '/__tn_large')
-  c.destroy!
-
-  c = img.crop_resized(170, nil, Magick::CenterGravity)
-  c.write('jpg:' + workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + '/__tn_preview')
-  c.destroy!
-
-  c = img.crop_resized(54, 41, Magick::CenterGravity)
-  c.write('jpg:' + workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + '/__tn_thumbnail')
-  c.destroy!
-
-  c = img.crop_resized(56, 73, Magick::CenterGravity)
-  c.write('jpg:' + workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + '/__tn_vertical')
-  c.destroy!
-
-  img.destroy!
-  true
+  img = Magick::Image.read(workitem.fields[workitem.params['from_f']]).first.sharpen(0,0.5)
+  
+    c = img.crop_resized(workitem.params['w'], workitem.params['h'], Magick::CenterGravity)
+    c.write('jpg:' + path)
+    
+        
+    c.destroy!
+    img.destroy!
+    
+    "tmp://" +  path
 end

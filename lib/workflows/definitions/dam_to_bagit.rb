@@ -10,19 +10,56 @@ module WGBH
             iterator :on_f => '__result__', :to_f => 'asset' do
               sequence do
                 participant :ref => 'preprocess_dam_metadata'
-                participant :ref => 'preprocess_dam_asset'
                 
-                participant :ref => 'transform_xml_by_xslt', :from_f => 'asset', :xslt => (File.dirname(__FILE__) + "/asset_to_pbcore.xsl")
-                set :f => '__bag_PBCore', :field_value => '__result__'
-                participant :ref => 'transform_xml_by_xslt', :from_f => 'asset', :to_f => 'dc', :xslt => (File.dirname(__FILE__) + "/asset_to_dc.xsl")    
-                set :f => '__bag_DC', :field_value => '__result__'
+                participant :ref => 'find_dam_asset'
+                participant :ref => 'add_to_bag', :file => 'File', :from_f => '__result__'
                 
-                participant :ref => 'handle_thumbnails'
+                participant :ref => 'find_dam_asset_thumbnail'
+                set :f => '__bag_Thumbnail', :field_value => '__result__'
+                participant :ref => 'add_to_bag', :file => 'Thumbnail', :from_f => '__result__'
                 
-                participant :ref => 'populate_bag', :if => '${f:ok}'
+                
+                concurrence do
+                  sequence do
+                    participant :ref => 'transform_xml_by_xslt', :from_f => 'asset', :xslt => (File.dirname(__FILE__) + "/asset_to_pbcore.xsl")
+                    participant :ref => 'add_to_bag', :file => 'PBCore', :from_f => '__result__'
+                  end
+                  sequence do
+                    participant :ref => 'transform_xml_by_xslt', :from_f => 'asset', :to_f => 'dc', :xslt => (File.dirname(__FILE__) + "/asset_to_dc.xsl")
+                    
+                    participant :ref => 'add_to_bag', :file => 'DC', :from_f => '__result__'
+                  end   
+                    
+                  create_thumbnails
+                end
+                
               end 
             end
             participant :ref => 'build_rdf'
+          end
+          
+          define 'create_thumbnails' do
+            concurrence do
+              sequence do
+                participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 320, :h => 240    
+                participant :ref => 'add_to_bag', :file => '__tn_large', :from_f => '__result__'
+              end                    
+              sequence do
+              participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 170, :h => nil  
+              
+              participant :ref => 'add_to_bag', :file => '__tn_preview', :from_f => '__result__'
+              end
+              sequence do
+              participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 54, :h => 41
+              
+              participant :ref => 'add_to_bag', :file => '__tn_thumbnail', :from_f => '__result__'
+              end
+              sequence do
+              participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 56, :h => 73
+              
+              participant :ref => 'add_to_bag', :file => '__tn_vertical', :from_f => '__result__'
+              end
+            end
           end
         end
       end

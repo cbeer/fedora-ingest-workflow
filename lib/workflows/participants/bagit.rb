@@ -7,33 +7,37 @@ $engine.register_participant 'validate_bag' do |workitem|
   true
 end
 
-$engine.register_participant 'populate_bag' do |workitem|
-  bag = BagIt::Bag.new workitem.fields['bag_root']
-  begin
-  workitem.fields.select { |k,v| k =~ /__bag_/ }.each do |k,v|
+def add_to_bag bag_root, object, h
+  bag = BagIt::Bag.new bag_root
+  h.each do |k,v|
     f = k.gsub(/__bag_/, '').gsub(/\.[a-z]+$/,'')
+    
+    if v =~ /^tmp:\/\//i
+      bag.add_file(object + "/" + f, v.gsub(/^tmp:\/\//,  ''))
+      FileUtils.rm v.gsub(/^tmp:\/\//,  '')
+      next 
+    end
+    
     if v =~ /^file:\/\//
-      bag.add_file(workitem.fields['identifier'] + "/" + f) do |io|
+      
+      
+      bag.add_file(object + "/" + f) do |io|
         io.puts ''
       end
-      FileUtils.rm workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + "/" + f
-      FileUtils.ln_s v.gsub(/^file:\/\//,  ''), workitem.fields['bag_root'] + '/data/' + workitem.fields['identifier'] + "/" + f
-    else      
-      bag.add_file(workitem.fields['identifier'] + "/" + f) do |io|
-        io.puts v
-      end
+      FileUtils.rm bag.data_dir + "/" + object + "/" + f
+      FileUtils.ln_s v.gsub(/^file:\/\//,  ''),bag.data_dir + "/" + object + "/" + f
+      next
     end
-  end   
-  rescue
+          
+    bag.add_file(object + "/" + f) do |io|
+      io.puts v
+    end
   end
-  true
 end
 
 $engine.register_participant 'add_to_bag' do |workitem|
-  bag = BagIt::Bag.new workitem.fields['bag_root']
-  bag.add_file(workitem.fields['identifier'] + "/" + workitem.params['file']) do |io|
-    io.puts workitem.fields[workitem.params['from_f']]
-  end
+  add_to_bag workitem.fields['bag_root'], workitem.fields['identifier'], {workitem.params['file'] => workitem.fields[workitem.params['from_f']]}
+  true
 end
 
 $engine.register_participant 'load_bag_object' do |workitem|
