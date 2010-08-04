@@ -13,7 +13,7 @@ optparse = OptionParser.new do |opts|
     options[:pid_ns] = p
   end
   
-  options[:host] = 'http://localhost:8080/fedora'
+  options[:host] = 'http://localhost:8180/fedora'
   opts.on('-h', '--host URL', 'Fedora Host') do |p|
     options[:host] = p
   end   
@@ -34,7 +34,7 @@ optparse.parse!
 
 require 'fedora-ingest-workflow'
 
-$: << File.expand_path( File.dirname(__FILE__) + "../lib/fedora" )
+$: << File.expand_path( File.dirname(__FILE__) + "./../lib/fedora" )
 
 require 'Fedora-API-M-WSDLDriver.rb'
 
