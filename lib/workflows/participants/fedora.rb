@@ -188,8 +188,16 @@ $engine.register_participant 'fedora_ingest_media_object' do |workitem|
   case type
     when /Moving Image/
       # Proxy
-      client = RestClient::Resource.new $fedora_rest_uri + "/objects/" + pid + "/datastreams/Proxy?controlGroup=M&dsLabel=Proxy&checksumType=DISABLED", :user => $fedora_user, :password => $fedora_pass
-      client.post File.read(workitem.fields['object_path'] + '/File'), :content_type => 'video/quicktime'
+#      client = RestClient::Resource.new $fedora_rest_uri + "/objects/" + pid + "/datastreams/Proxy?controlGroup=M&dsLabel=Proxy&checksumType=DISABLED", :user => $fedora_user, :password => $fedora_pass
+#      client.post File.read(workitem.fields['object_path'] + '/File'), :content_type => 'video/quicktime'
+      
+      url = "http://openvault.wgbh.org:8080/videos/" + File.basename(File.readlink(workitem.fields['object_path'] + '/File'))
+      
+      client = RestClient::Resource.new $fedora_rest_uri + "/objects/" + pid + "/datastreams/Proxy?controlGroup=R&dsLabel=Proxy&checksumType=DISABLED&dsLocation=" + CGI::escape(url) + "&mimeType=" + CGI::escape('video/quicktime'), :user => $fedora_user, :password => $fedora_pass
+      client.post nil
+      
+      $fedora.addRelationship(:pid => pid, :relationship => 'info:fedora/fedora-system:def/model#hasModel', :object => 'info:fedora/wgbh:VIDEO', :isLiteral => false, :datatype => nil)
+      
   end
   # media
   # thumbnails
