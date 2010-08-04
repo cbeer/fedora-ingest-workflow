@@ -45,7 +45,7 @@ module WGBH
                 participant :ref => 'add_to_bag', :file => '__tn_large', :from_f => '__result__'
               end                    
               sequence do
-              participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 170, :h => nil  
+              participant :ref =>'create_thumbnail', :from_f => '__bag_Thumbnail', :w => 320, :h => 240  
               
               participant :ref => 'add_to_bag', :file => '__tn_preview', :from_f => '__result__'
               end
